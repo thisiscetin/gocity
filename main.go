@@ -126,5 +126,11 @@ func (cm *Map) BuildRoads(closest int) {
 		}
 	}
 
+	for _, c := range cm.Cities {
+		for k, v := range c.Roads {
+			k.Roads[c] = v
+		}
+	}
+
 	cm.RoadsBuilt = true
 }
