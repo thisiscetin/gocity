@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"sync"
+	"time"
 )
 
 // City ..
@@ -26,8 +28,9 @@ func NewCity(name string, i, j float64) *City {
 
 // Map ..
 type Map struct {
-	Cities     []*City
-	RoadsBuilt bool
+	Cities       []*City
+	RoadsBuilt   bool
+	AllReachable bool
 	sync.Mutex
 }
 
@@ -122,15 +125,78 @@ func (cm *Map) BuildRoads(closest int) {
 
 		for i := 0; i < tempRoads.cap; i++ {
 			c0.Roads[tempRoads.cities[i]] = tempRoads.distances[i]
-			tempRoads.cities[i].Roads[c0] = tempRoads.distances[i]
 		}
 	}
 
+	// build vertices in reverse order to simulate roads flowing on both ways
+	// record connected cities in the mean time to check all cities are reachable
+	connected := make(map[*City]bool, 0)
 	for _, c := range cm.Cities {
 		for k, v := range c.Roads {
 			k.Roads[c] = v
+			connected[k] = true
 		}
 	}
 
 	cm.RoadsBuilt = true
+	cm.AllReachable = len(cm.Cities) == len(connected)
+}
+
+// Path ..
+type Path struct {
+	Starting    *City
+	Route       []*City
+	Distance    float64
+	TimeElapsed time.Duration
+	TimeFound   time.Time
+}
+
+func (p *Path) String() string {
+	return fmt.Sprintf("Started and ended at %s, made %d visits, distance %f, took %v to discover",
+		p.Starting.Name, len(p.Route), p.Distance, p.TimeElapsed)
+}
+
+// FindRandomPath ..
+func (cm *Map) FindRandomPath(starting *City, distanceCap float64) (*Path, error) {
+	if !cm.RoadsBuilt {
+		return nil, fmt.Errorf("first build roads")
+	}
+	if !cm.AllReachable {
+		return nil, fmt.Errorf("all cities are not reachable, build more roads")
+	}
+
+	timeStart, path := time.Now(), &Path{
+		Starting: starting,
+		Route:    []*City{starting},
+	}
+
+	cityCount := len(cm.Cities)
+	seen := make(map[*City]bool, cityCount)
+
+	rand.Seed(timeStart.UnixNano())
+	for {
+		i := rand.Intn(len(starting.Roads))
+
+		for k, v := range starting.Roads {
+			if i == 0 {
+				starting = k
+				seen[k] = true
+				path.Distance += v
+				path.Route = append(path.Route, k)
+
+				break
+			}
+			i--
+		}
+
+		if path.Distance > distanceCap && distanceCap > 0 {
+			return nil, nil
+		}
+		if len(seen) == cityCount {
+			path.TimeFound = time.Now()
+			path.TimeElapsed = time.Since(timeStart)
+
+			return path, nil
+		}
+	}
 }

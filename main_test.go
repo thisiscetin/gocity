@@ -56,3 +56,26 @@ func TestBuildRoads(t *testing.T) {
 	assert.Equal(t, 2, len(cityA.Roads))
 	assert.Equal(t, 2, len(cityC.Roads))
 }
+
+func TestFindRandomPath(t *testing.T) {
+	cm := NewMap()
+
+	cm.AddCity("a", 0.0, 1.0)
+	cm.AddCity("b", 0.0, 2.0)
+	cm.AddCity("c", 1.0, 2.0)
+	cm.AddCity("d", 2.0, 2.0)
+
+	cm.BuildRoads(2)
+
+	assert.Equal(t, true, cm.AllReachable)
+
+	cityA := cm.FindCity("a")
+
+	p, err := cm.FindRandomPath(cityA, 0)
+
+	assert.NoError(t, err)
+	assert.Equal(t, cityA, p.Starting)
+	assert.NotNil(t, p.TimeElapsed)
+	assert.NotNil(t, p.TimeFound)
+	assert.True(t, len(p.Route) >= 4)
+}
