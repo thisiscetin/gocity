@@ -1,6 +1,7 @@
 # gocity
-Creates a graph including cities and roads. Road number, connecting cities can be modified. 
-Gociy has a random path finder function and this package might be used for different purposes.
+
+Creates a graph including cities, roads, finds a random path. 
+Number of roads, connecting cities can be modified. This small package built to be used in different packages.
 The SVG image below is built using "github.com/ajstarks/svgo" for illustration.
 
 
